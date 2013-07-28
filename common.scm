@@ -18,3 +18,10 @@
 
 (define sizeof-bson          (foreign-value "sizeof(bson)"          int))
 (define sizeof-bson-iterator (foreign-value "sizeof(bson_iterator)" int))
+
+
+;; helper functions
+(define (copy-blob pointer length)
+  (let ((blob (make-blob length)))
+    (move-memory! pointer blob length)
+    blob))

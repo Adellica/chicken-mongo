@@ -35,6 +35,28 @@
   (lambda (x) (%bson-data x)) ;; <-- don't use u8vectors with scheme-pointers!
   (lambda (x) (%make-bson x)))
 
+
+;; oid's
+(define-record-type oid
+  (%make-oid blob)
+  oid?
+  (blob oid-blob))
+
+(define-record-printer (oid x out)
+  (format out "#<oid ~A>" (oid-blob x)))
+
+(define-foreign-type oid (c-pointer "bson_oid_t")
+  (lambda (oid)
+    (assert (= (number-of-bytes (oid-blob oid)) 12))
+    (location (oid-blob oid)))
+  (lambda (ptr) (%make-oid (copy-blob ptr 12))))
+
+(define (oid blob)
+  (assert (blob? blob))
+  (%make-oid blob))
+
+;; --
+
 (define-foreign-type bson_bool_t int)
 
 (define-syntax define-bson-op
@@ -171,6 +193,7 @@
   int          bson_iterator_int_raw
   long         bson_iterator_long_raw
   int          bson_iterator_time ;; todo
+  oid          bson_iterator_oid
   )
 (define-foreign-lambda void bson_iterator_subiterator
   bson-iterator  ;; original iterator
@@ -207,6 +230,8 @@
                          ((= BSON_INT type)    (bson_iterator_int_raw i))
                          ((= BSON_LONG type)   (bson_iterator_long_raw i))
                          ((= BSON_NULL type)   (void))
+
+                         ((= BSON_OID type)    (bson_iterator_oid i))
 
                          ((= BSON_OBJECT type) (obj-loop (init-bson-subiterator i)))
                          ((= BSON_ARRAY type)  (list->vector (map cdr (obj-loop (init-bson-subiterator i)))))

@@ -1,1 +1,6 @@
-/mongo
+/bson.import.scm
+/bson.import.so
+/bson.so
+/mongo.import.scm
+/mongo.import.so
+/mongo.so

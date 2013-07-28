@@ -12,7 +12,8 @@
   (cond ((flonum? obj) (bitconstruct (obj double)))
         ((string? obj) (bitconstruct ((string-length obj) 32 little)
                                      ((string->bitstring obj) bitstring)
-                                     (0 8)))))
+                                     (0 8)))
+        (else (error "don't know how to serialize" obj))))
 
 (define ($document alist)
   (apply bitstring-append

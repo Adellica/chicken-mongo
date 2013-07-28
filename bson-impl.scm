@@ -265,3 +265,6 @@
                         (bson_destroy x)))
     b))
 
+
+;; debugging utils
+(define mongo-print (foreign-lambda void "bson_print" bson))

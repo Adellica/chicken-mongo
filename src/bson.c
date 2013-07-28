@@ -636,19 +636,41 @@ int bson_init_unfinished_data( bson *b, char *data, int dataSize, bson_bool_t ow
     return BSON_OK;
 }
 
+// we are using this scheme:
+//
+// stackPtr =
+//     0: no stack, stackSize = 0
+//    -1: embedded stack, part of struct (will be moved by gc!)
+//  else: dynamically allocated stack (not in the hands of our gc)
+//
+// I dont' think a hard-coded pointer-value of anything but 0 is
+// acceptible (so -1 is not very clean).
+static size_t* bson_stack_ptr(bson * b) {
+  if(b->stackPtr == (size_t*)-1)
+    return b->stack;
+  else
+    // may also be 0:
+    return b->stackPtr;
+}
+
 static int _bson_append_grow_stack( bson * b ) {
+    // no stack:
     if ( !b->stackPtr ) {
-        // If this is an empty bson structure, initially use the struct-local (fixed-size) stack
-        b->stackPtr = b->stack;
+        // If this is an empty bson structure, initially use the
+        // struct-local (fixed-size) stack.
+
+        // TODO: this is a problem! it "caches" the address of our
+        // chicken-allocated stack, which gets moved around by the gc.
+        b->stackPtr = (size_t*)-1;//b->stack;
         b->stackSize = sizeof( b->stack ) / sizeof( size_t );
     }
-    else if ( b->stackPtr == b->stack ) {
+    else if ( b->stackPtr == (size_t*)-1 ) {
         // Once we require additional capacity, set up a dynamically resized stack
         size_t *new_stack = ( size_t * ) bson_malloc( 2 * sizeof( b->stack ) );
         if ( new_stack ) {
             b->stackPtr = new_stack;
             b->stackSize = 2 * sizeof( b->stack ) / sizeof( size_t );
-            memcpy( b->stackPtr, b->stack, sizeof( b->stack ) );
+            memcpy( bson_stack_ptr ( b ), b->stack, sizeof( b->stack ) );
         }
         else {
             return BSON_ERROR;
@@ -656,7 +678,8 @@ static int _bson_append_grow_stack( bson * b ) {
     }
     else {
         // Double the capacity of the dynamically-resized stack
-        size_t *new_stack = ( size_t * ) bson_realloc( b->stackPtr, ( b->stackSize * 2 ) * sizeof( size_t ) );
+        // can never point to b->stack here
+        size_t *new_stack = ( size_t * ) bson_realloc( bson_stack_ptr( b), ( b->stackSize * 2 ) * sizeof( size_t ) );
         if ( new_stack ) {
             b->stackPtr = new_stack;
             b->stackSize *= 2;
@@ -757,7 +780,7 @@ MONGO_EXPORT void bson_destroy( bson *b ) {
         b->data = NULL;
         b->dataSize = 0;
         b->ownsData = 0;        
-        if ( b->stackPtr && b->stackPtr != b->stack ) {
+        if ( b->stackPtr && b->stackPtr != (size_t*)-1 ) {
             bson_free( b->stackPtr );
             b->stackPtr = NULL;
         }
@@ -1019,7 +1042,7 @@ MONGO_EXPORT int bson_append_time_t( bson *b, const char *name, time_t secs ) {
 MONGO_EXPORT int bson_append_start_object( bson *b, const char *name ) {
     if ( bson_append_estart( b, BSON_OBJECT, name, 5 ) == BSON_ERROR ) return BSON_ERROR;
     if ( b->stackPos >= b->stackSize && _bson_append_grow_stack( b ) == BSON_ERROR ) return BSON_ERROR;
-    b->stackPtr[ b->stackPos++ ] = _bson_position(b);
+    (bson_stack_ptr(b))[ b->stackPos++ ] = _bson_position(b);
     bson_append32( b , &zero );
     return BSON_OK;
 }
@@ -1027,7 +1050,7 @@ MONGO_EXPORT int bson_append_start_object( bson *b, const char *name ) {
 MONGO_EXPORT int bson_append_start_array( bson *b, const char *name ) {
     if ( bson_append_estart( b, BSON_ARRAY, name, 5 ) == BSON_ERROR ) return BSON_ERROR;
     if ( b->stackPos >= b->stackSize && _bson_append_grow_stack( b ) == BSON_ERROR ) return BSON_ERROR;
-    b->stackPtr[ b->stackPos++ ] = _bson_position(b);
+    (bson_stack_ptr(b))[ b->stackPos++ ] = _bson_position(b);
     bson_append32( b , &zero );
     return BSON_OK;
 }
@@ -1040,7 +1063,7 @@ MONGO_EXPORT int bson_append_finish_object( bson *b ) {
     if ( bson_ensure_space( b, 1 ) == BSON_ERROR ) return BSON_ERROR;
     bson_append_byte( b , 0 );
 
-    start = b->data + b->stackPtr[ --b->stackPos ];
+    start = b->data + (bson_stack_ptr(b))[ --b->stackPos ];
     if ( b->cur - start >= INT32_MAX ) {
         b->err = BSON_SIZE_OVERFLOW;
         return BSON_ERROR;

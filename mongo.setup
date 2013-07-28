@@ -1,0 +1,6 @@
+
+(compile -s bson.scm -J -I./src -C -DMONGO_HAVE_STDINT ./src/*.c)
+(compile -s bson.import.scm)
+
+(install-extension 'bson
+                   '("bson.so" "bson.import.so"))

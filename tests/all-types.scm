@@ -1,0 +1,11 @@
+(define all-types
+  `((int      . 1)
+    (double   . 1.5)
+    (string   . "some string!")
+    (array    . #("vector element 1" "vector element 2"))
+    (document . ((key-as-string . "value")
+                 (key-as-symbol . "value")))
+    (false    . #f)
+    (true     . #t)
+    (null     . ,(void))
+    ))

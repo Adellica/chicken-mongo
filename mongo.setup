@@ -1,6 +1,30 @@
 
-(compile -s bson.scm -J -I./src -C -DMONGO_HAVE_STDINT ./src/*.c)
+
+(compile -s bson.scm -J
+         
+         ./src/bson.c
+         ./src/numbers.c
+         ./src/encoding.c
+
+         -I./src -C -DMONGO_HAVE_STDINT)
+
 (compile -s bson.import.scm)
 
 (install-extension 'bson
                    '("bson.so" "bson.import.so"))
+
+(compile -s mongo.scm -J
+
+         ./src/mongo.c
+         ./src/env.c
+
+         ./src/bson.c
+         ./src/numbers.c
+         ./src/encoding.c
+
+         -I./src -C -DMONGO_HAVE_STDINT)
+
+(compile -s mongo.import.scm)
+
+(install-extension 'mongo
+                   '("mongo.so" "mongo.import.so"))

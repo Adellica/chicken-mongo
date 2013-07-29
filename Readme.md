@@ -1,5 +1,4 @@
-
-    [Chicken Scheme]:http://call-cc.org
+  [Chicken Scheme]:http://call-cc.org
 
 # chicken-mongo
 

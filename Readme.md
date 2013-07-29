@@ -3,7 +3,7 @@
 # chicken-mongo
 
 [Chicken Scheme] bindings for [MongoDB](http://mongodb.org). Currently
-in experimantal--stage. The bindings wrap the official
+in experimantal-stage. The bindings wrap the official
 [Mongo-C-Driver](https://github.com/mongodb/mongo-c-driver) library.
 
 While most functionality is still missing, it might be a good starting

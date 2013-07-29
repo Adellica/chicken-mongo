@@ -147,7 +147,7 @@
     cursor))
 
 (define (mongo-find-one nm #!optional query fields)
-  (let ((cursor (mongo-find nm query fields)))
+  (let ((cursor (mongo-find* nm query fields)))
     (and (mongo-cursor-next! cursor)
          (mongo-cursor-current cursor))))
 

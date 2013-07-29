@@ -121,24 +121,8 @@
 (define mongo-cursor-nonnull?    (foreign-lambda* bool ((mongo-cursor cursor))
                                            "return(cursor->current.data);"))
 
-(define %bson_size (foreign-lambda int bson_size (c-pointer "bson")))
 (define %bson_init_finished_data
   (foreign-lambda mongo-return-success? bson_init_finished_data scheme-pointer scheme-pointer bool))
-
-(define-foreign-type bson (c-pointer "bson")
-  (lambda (x) (let ((blob (make-string (foreign-value "sizeof(bson)" int))))
-           (%bson_init_finished_data blob ;; bson struct
-                                     x    ;; raw bson data
-                                     #f) ;; bson struct does not own string
-           (location blob)))             ;; pointer to bson struct
-  (lambda (ptr)
-    ;; copy bson binary data into string
-    (let* ((len (%bson_size ptr))
-           (blob (make-string len)))
-      (move-memory! ((foreign-lambda c-pointer bson_data (c-pointer "bson")) ptr) ;; from 
-                    blob ;; to
-                    len)
-      blob)))
 
 ;; returns #f or #<bson>
 (define (mongo-cursor-current cursor)

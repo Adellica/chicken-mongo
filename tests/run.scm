@@ -7,3 +7,6 @@
 
 ;; test bson and back, via blob
 (test all-types (bson->obj (blob->bson (bson->blob (bson all-types)))))
+
+
+(test-exit)

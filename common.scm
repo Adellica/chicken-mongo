@@ -25,3 +25,15 @@
   (let ((blob (make-blob length)))
     (move-memory! pointer blob length)
     blob))
+
+
+(define-foreign-type
+  bson
+  (c-pointer "bson")
+  (lambda (x) (let ((blob/ptr (bson-blob x)))
+           (cond ((blob? blob/ptr) (location blob/ptr))
+                 ((pointer-like? blob/ptr) blob/ptr)
+                 (else (error "unknown bson blob" blob/ptr)))))
+  (lambda (x) (make-bson x)))
+
+(define-foreign-lambda int bson_size bson)

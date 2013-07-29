@@ -22,19 +22,16 @@
 <#
 
 
+
+
+
+
 (include "common.scm")
 
 (define-record-type bson
-  (%make-bson data)
-  %bson?
-  (data %bson-data))
-
-(define-foreign-type
-  bson
-  scheme-pointer
-  (lambda (x) (%bson-data x)) ;; <-- don't use u8vectors with scheme-pointers!
-  (lambda (x) (%make-bson x)))
-
+  (make-bson data)
+  bson?
+  (data bson-blob))
 
 ;; oid's
 (define-record-type oid
@@ -75,8 +72,6 @@
 (define-foreign-lambda void bson_destroy bson)
 
 
-(define-foreign-lambda int bson_size bson)
-
 (define-appender bson_append_int    int)
 (define-appender bson_append_long   integer64)
 (define-appender bson_append_double double)
@@ -98,7 +93,7 @@
 
 (define (bson-init)
   ;;                                                 init nongc free?
-  (let ((bson (%make-bson (make-blob sizeof-bson))))
+  (let ((bson (make-bson (make-blob sizeof-bson))))
     (set-finalizer! bson (lambda (x)
                            (print "destrying bson with strp " (stack-ptr x))
                            (bson_destroy x)))
@@ -257,7 +252,7 @@
 
 (define (blob->bson bson-blob)
   (assert (or (string? bson-blob) (blob? bson-blob)))
-  (let ((b (%make-bson (make-blob sizeof-bson))))
+  (let ((b (make-bson (make-blob sizeof-bson))))
     (or (bson_init_finished_data_with_copy b bson-blob)
         (error "could not initialize bson with data" bson-blob))
     (set-finalizer! b (lambda (x)
